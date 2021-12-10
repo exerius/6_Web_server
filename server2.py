@@ -7,15 +7,11 @@ def work_with_client(conn):
   while True:
     data = conn.recv(leng) # получение запроса
     date = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
-    resp = f"""HTTP/1.1
-    Date: %{date}
-    Server: self-written script
-    """ # начало формирования ответа
+    resp = f"""HTTP/1.1 """ # начало формирования ответа
     msg = data.decode() # раскодирование запроса
     msg = msg.split("\r\n")  # разбиение запроса на строки
     line1 = msg[0].split(" ") # разбиение первой строки запроса по элементам
-    print(line1)
-    text = ""
+    print(msg)
     if line1[1] == "/":
       line1[1] = abspath(".") # если передано /, преобразуем в папку сервера
     line1[1] = path(line1[1]) # преобразуем файл в путь
@@ -24,12 +20,11 @@ def work_with_client(conn):
         resp += "200 Ok"  # код
         if line1[1].is_file():
           with open(line1[1], "rb") as file:
-            for i in file: # открытие и чтение файла
-              text += i
+              text = file.read()
         elif line1[1].is_dir():
-          with open(line1[1].joinpath("index.html"), "rb") as file: # если передана папка
-            for i in file:
-              text += i
+          with open(line1[1].joinpath("index.html"), "r") as file: # если передана папка
+            text = file.read()
+            print(text)
       else: # если файла нет
         resp += "204 No Content"
     elif line1[0] == "HEAD": # тела ответа не будет
@@ -55,8 +50,14 @@ def work_with_client(conn):
       with open(line1[1], "w") as file:
         for i in msg[bodystart::]:
           file.write(i)
-    resp += "Connection:close\n\r\n\r"+text # окончание формирования запроса
+    resp += f"""\n\rDate: {date}\n\rServer: self-written script\n\rConnection:close\n\r\n\r\n\r""" # окончание формирования запроса
     conn.send(resp.encode()) # отправка запроса
+    if type(text)==str:
+        print(resp+text)
+        conn.send(str(resp+text).encode())
+    else:
+        conn.send(text)
+    
 try:
         with open("settings.txt", "r") as file:
             settings = []
@@ -75,6 +76,7 @@ while True:
   sock = socket.socket() # создание сокета
   try:
     sock.bind(('', socket_number)) # привязка к порту 80
+    print(f"подключено к порту %{socket_number}")
   except OSError:
     socket_number += 1
     continue
