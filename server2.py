@@ -2,10 +2,15 @@ import socket
 from os.path import isdir, isfile, relpath, abspath, normpath # импорт
 from pathlib import Path as path
 from threading import Thread
+import time
 def work_with_client(conn):
   while True:
-    data = conn.recv(8192) # получение запроса
-    resp = """HTTP/1.1 """ # начало формирования ответа
+    data = conn.recv(leng) # получение запроса
+    date = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+    resp = f"""HTTP/1.1
+    Date: %{date}
+    Server: self-written script
+    """ # начало формирования ответа
     msg = data.decode() # раскодирование запроса
     msg = msg.split("\r\n")  # разбиение запроса на строки
     line1 = msg[0].split(" ") # разбиение первой строки запроса по элементам
@@ -34,22 +39,36 @@ def work_with_client(conn):
         if bodystart+1<len(msg)-1:
           resp += "204 No Content"
         else:
+          ext = line1[1].split(".")[1]
           print(msg)
           resp += "200 Ok"
       else:
-        resp += "201 Created"
-      with open(line1[1], "a") as file:
+        content = len("".join(msg[bodystart::]).encode())
+        resp += f"Content-type: text/%{ext}; charset=UTF-8\nContent-length: %{content}\n201 Created"
+      with open(line1[1], "a") as file: 
         for i in msg[bodystart::]:
           file.write(i)
     elif line1[0] == "POST": # как PUT, но только файл создается заново
-      resp += "200 Ok"
+      resp += f"Content-type: text/%{ext}; charset=UTF-8\nContent-length: %{content}\n200 Ok"
       bodystart=msg.index("")+1
       with open(line1[1], "w") as file:
         for i in msg[bodystart::]:
           file.write(i)
-    resp += "\n\r\n\r"+text # окончание формирования запроса
+    resp += "Connection:close\n\r\n\r"+text # окончание формирования запроса
     conn.send(resp.encode()) # отправка запроса
-socket_number = 80
+try:
+        with open("settings.txt", "r") as file:
+            settings = []
+            for i in file:
+                settings.append(i.split(":"))
+            settings = {i[0]:i[1] for i in settings}
+            socket_number = int(settings["socket"])
+            dirname = settings["dir"]
+            leng = settings["leng"]
+except OSError:
+        sock = socket.socket()
+        sock.bind(("", 8080))
+        sock.send("404".encode())
 threads = []
 while True:
   sock = socket.socket() # создание сокета
