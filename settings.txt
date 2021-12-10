@@ -1,0 +1,3 @@
+socket:80
+dir:.
+leng:8192
