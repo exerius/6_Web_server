@@ -14,6 +14,7 @@ def work_with_client(conn):
     msg = data.decode() # раскодирование запроса
     msg = msg.split("\r\n")  # разбиение запроса на строки
     line1 = msg[0].split(" ") # разбиение первой строки запроса по элементам
+    print(line1)
     text = ""
     if line1[1] == "/":
       line1[1] = abspath(".") # если передано /, преобразуем в папку сервера
@@ -22,11 +23,11 @@ def work_with_client(conn):
       if line1[1].exists(): # если существует
         resp += "200 Ok"  # код
         if line1[1].is_file():
-          with open(line1[1], "r") as file:
+          with open(line1[1], "rb") as file:
             for i in file: # открытие и чтение файла
               text += i
         elif line1[1].is_dir():
-          with open(line1[1].joinpath("index.html"), "r") as file: # если передана папка
+          with open(line1[1].joinpath("index.html"), "rb") as file: # если передана папка
             for i in file:
               text += i
       else: # если файла нет
@@ -64,7 +65,7 @@ try:
             settings = {i[0]:i[1] for i in settings}
             socket_number = int(settings["socket"])
             dirname = settings["dir"]
-            leng = settings["leng"]
+            leng = int(settings["leng"])
 except OSError:
         sock = socket.socket()
         sock.bind(("", 8080))
