@@ -23,8 +23,11 @@ class myHandler(http.server.SimpleHTTPRequestHandler):
             super().do_HEAD()
 
     def do_GET(self):
-        if (len(bytes(self.requestline.encode()+str(self.headers).encode()))) <= leng:
+        if ((len(bytes(self.requestline.encode()+str(self.headers).encode()))) <= leng) and (self.requestline[1][:-3] in allowed):
             super().do_GET()
+        else:
+            self.send_error(403
+
 
     def do_POST(self):
         if (len(bytes(self.requestline.encode()+str(self.headers).encode()))) <= leng:
@@ -49,6 +52,7 @@ with open("settings.txt", "r") as file:
     PORT = int(settings["socket"])
     dirname = settings["dir"]
     leng = int(settings["leng"])
+    allowed = [".html", ".css", ".js", ".ico"]
 
 
 Handler = http.server.SimpleHTTPRequestHandler
